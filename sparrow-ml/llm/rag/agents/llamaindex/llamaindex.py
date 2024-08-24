@@ -212,7 +212,15 @@ class LlamaIndexPipeline(Pipeline):
         return answer
 
     def get_rag_response(self, query, chain: BaseQueryEngine, debug=False) -> str:
-        result = chain.query(query)
+        try:
+            result = chain.query(query)
+        except ValueError as error:
+            if text := error.args[0]:
+                starting_str = "Could not extract json string from output: \n"
+                json_str = text[text.find(starting_str) + len(starting_str) :]
+                result = json_str + "}"
+            else:
+                raise error
 
         try:
             # Convert and pretty print
