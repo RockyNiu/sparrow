@@ -5,8 +5,6 @@ The orignial License is GPL 3.0. This is a fork of the original project, which i
 
 ## Adaption
 - bug fixing
+  - using llama-index-core==0.10.23.post1 to avoid the [unresolable import issue](https://github.com/katanaml/sparrow/pull/68#issue-2482213341)
 - formating with ruff
 - type checking
-
-## Author
-- [RockyNiu](github.com/rockyniu)
