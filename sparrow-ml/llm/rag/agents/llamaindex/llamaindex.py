@@ -211,7 +211,9 @@ class LlamaIndexPipeline(Pipeline):
 
         return answer
 
-    def get_rag_response(self, query, chain: BaseQueryEngine, debug=False) -> str | None:
+    def get_rag_response(
+        self, query, chain: BaseQueryEngine, debug=False
+    ) -> str | None:
         try:
             result = chain.query(query)
         except ValueError as error:
@@ -222,7 +224,6 @@ class LlamaIndexPipeline(Pipeline):
                 result = json_str + "}"
             else:
                 return
-
 
         try:
             # Convert and pretty print
