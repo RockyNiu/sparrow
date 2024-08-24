@@ -3,7 +3,6 @@ from typing import Any
 from typing import List
 import warnings
 
-
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -14,13 +13,13 @@ class Pipeline(ABC):
     def run_pipeline(
         self,
         payload: str,
-        query_inputs: [str],
-        query_types: [str],
-        keywords: [str],
-        query: str,
-        file_path: str,
-        index_name: str,
-        options: List[str] = None,
+        query_inputs: list[str] | None = None,
+        query_types: list[str] | None = None,
+        keywords: list[str] | None = None,
+        query: str | None = None,
+        file_path: str | None = None,
+        index_name: str | None = None,
+        options: List[str] | None = None,
         group_by_rows: bool = True,
         update_targets: bool = True,
         debug: bool = False,

@@ -16,7 +16,11 @@ def run(
 
     try:
         rag = get_pipeline(user_selected_agent)
-        rag.run_pipeline(user_selected_agent, None, None, query, None, None, debug)
+        rag.run_pipeline(
+            payload=user_selected_agent,
+            query=query,
+            debug=debug,
+        )
     except ValueError as e:
         print(f"Caught an exception: {e}")
 

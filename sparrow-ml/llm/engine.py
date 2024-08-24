@@ -20,22 +20,22 @@ def run(
     inputs: Annotated[str, typer.Argument(help="The list of fields to fetch")],
     types: Annotated[str, typer.Argument(help="The list of types of the fields")],
     keywords: Annotated[
-        str, typer.Argument(help="The list of table column keywords")
+        str | None, typer.Argument(help="The list of table column keywords")
     ] = None,
-    file_path: Annotated[str, typer.Option(help="The file to process")] = None,
+    file_path: Annotated[str | None, typer.Option(help="The file to process")] = None,
     agent: Annotated[str, typer.Option(help="Selected agent")] = "llamaindex",
     index_name: Annotated[
-        str, typer.Option(help="Index to identify embeddings")
+        str | None, typer.Option(help="Index to identify embeddings")
     ] = None,
     options: Annotated[
-        List[str], typer.Option(help="Options to pass to the agent")
+        List[str] | None, typer.Option(help="Options to pass to the agent")
     ] = None,
     group_by_rows: Annotated[
         bool, typer.Option(help="Group JSON collection by rows")
     ] = True,
     update_targets: Annotated[bool, typer.Option(help="Update targets")] = True,
     debug: Annotated[bool, typer.Option(help="Enable debug mode")] = False,
-):
+) -> None:
     query = "retrieve " + inputs
     query_types = types
 
@@ -52,17 +52,17 @@ def run(
     try:
         rag = get_pipeline(user_selected_agent)
         rag.run_pipeline(
-            user_selected_agent,
-            query_inputs_arr,
-            query_types_arr,
-            keywords_arr,
-            query,
-            file_path,
-            index_name,
-            options,
-            group_by_rows,
-            update_targets,
-            debug,
+            payload=user_selected_agent,
+            query_inputs=query_inputs_arr,
+            query_types=query_types_arr,
+            keywords=keywords_arr,
+            query=query,
+            file_path=file_path,
+            index_name=index_name,
+            options=options,
+            group_by_rows=group_by_rows,
+            update_targets=update_targets,
+            debug=debug,
         )
 
     except ValueError as e:

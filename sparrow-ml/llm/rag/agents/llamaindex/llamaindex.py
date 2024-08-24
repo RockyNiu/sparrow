@@ -3,7 +3,8 @@ from llama_index.core import VectorStoreIndex, Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.weaviate import WeaviateVectorStore
-import weaviate
+from llama_index.core.base.base_query_engine import BaseQueryEngine
+from weaviate import Client
 from pydantic import BaseModel, create_model
 from typing import Callable, List
 import box
@@ -20,23 +21,33 @@ from typing import Any
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
+LlamaIndexPipelineStep = (
+    Client
+    | Ollama
+    | HuggingFaceEmbedding
+    | VectorStoreIndex
+    | type[BaseModel]
+    | BaseQueryEngine
+)
+
 
 class LlamaIndexPipeline(Pipeline):
-    def run_pipeline(
+    # TODO: fix the type hints here
+    def run_pipeline(  # type: ignore
         self,
         payload: str,
         query_inputs: list[str],
         query_types: list[str],
-        keywords: list[str],
-        query: str,
-        file_path: str,
-        index_name: str,
+        keywords: list[str] | None = None,
+        query: str | None = None,
+        file_path: str | None = None,
+        index_name: str | None = None,
         options: List[str] | None = None,
         group_by_rows: bool = True,
         update_targets: bool = True,
         debug: bool = False,
         local: bool = True,
-    ) -> Any:
+    ) -> str:
         print(f"\nRunning pipeline with {payload}\n")
 
         if len(query_inputs) == 1:
@@ -60,7 +71,7 @@ class LlamaIndexPipeline(Pipeline):
             cfg = box.Box(yaml.safe_load(ymlfile))
 
         client = self.invoke_pipeline_step(
-            lambda: weaviate.Client(cfg.WEAVIATE_URL),
+            lambda: Client(cfg.WEAVIATE_URL),
             "Connecting to Weaviate...",
             local,
         )
@@ -96,6 +107,8 @@ class LlamaIndexPipeline(Pipeline):
             local,
         )
 
+        if not isinstance(index, VectorStoreIndex):
+            raise ValueError("Index is not an instance of VectorStoreIndex")
         # may want to try with similarity_top_k=5, default is 2
         query_engine = self.invoke_pipeline_step(
             lambda: index.as_query_engine(
@@ -108,7 +121,7 @@ class LlamaIndexPipeline(Pipeline):
         return query_engine
 
     # Function to safely evaluate type strings
-    def safe_eval_type(self, type_str, context):
+    def safe_eval_type(self, type_str, context) -> type:
         try:
             return eval(type_str, {}, context)
         except NameError:
@@ -142,7 +155,7 @@ class LlamaIndexPipeline(Pipeline):
 
         return DynamicModel
 
-    def load_embedding_model(self, model_name):
+    def load_embedding_model(self, model_name) -> HuggingFaceEmbedding:
         return HuggingFaceEmbedding(model_name=model_name)
 
     def build_index(
@@ -160,7 +173,7 @@ class LlamaIndexPipeline(Pipeline):
 
         return index
 
-    def process_query(self, query, rag_chain, debug=False, local=True):
+    def process_query(self, query, rag_chain, debug=False, local=True) -> str:
         start = timeit.default_timer()
 
         step = 0
@@ -198,7 +211,7 @@ class LlamaIndexPipeline(Pipeline):
 
         return answer
 
-    def get_rag_response(self, query, chain, debug=False):
+    def get_rag_response(self, query, chain, debug=False) -> str:
         result = chain.query(query)
 
         try:
@@ -207,14 +220,21 @@ class LlamaIndexPipeline(Pipeline):
             data = json.dumps(data, indent=4)
             return data
         except (json.decoder.JSONDecodeError, TypeError):
-            print("The response is not in JSON format:\n")
-            print(result)
+            msg = f"""
+            The response is not in JSON format
+            {result}
+            """
+            print(msg)
+            raise ValueError(msg)  # TODO: update the exception handling
 
-        return False
+        # return False
 
     def invoke_pipeline_step(
-        self, task_call: Callable, task_description: str, local: bool
-    ) -> Any:
+        self,
+        task_call: Callable[[], LlamaIndexPipelineStep],
+        task_description: str,
+        local: bool,
+    ) -> LlamaIndexPipelineStep:
         if local:
             with Progress(
                 SpinnerColumn(),
