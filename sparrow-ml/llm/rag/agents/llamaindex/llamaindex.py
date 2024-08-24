@@ -211,7 +211,7 @@ class LlamaIndexPipeline(Pipeline):
 
         return answer
 
-    def get_rag_response(self, query, chain, debug=False) -> str:
+    def get_rag_response(self, query, chain: BaseQueryEngine, debug=False) -> str:
         result = chain.query(query)
 
         try:
