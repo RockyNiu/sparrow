@@ -14,13 +14,13 @@ class MarkdownProcessor(object):
         markdown_text = self.invoke_pipeline_step(
             lambda: pymupdf4llm.to_markdown(file_path),
             "Extracting markdown text from the document...",
-            local
+            local,
         )
 
         content, table_content = self.invoke_pipeline_step(
             lambda: self.load_text_data(markdown_text, options),
             "Loading text data...",
-            local
+            local,
         )
 
         if debug:
@@ -51,7 +51,9 @@ class MarkdownProcessor(object):
 
     def extract_tables(self, markdown_text):
         # Regular expression to match markdown tables
-        table_pattern = re.compile(r'(\|.+\|\n\|[-| ]+\|\n(?:\|.*\|\n)*?)(?=\|.*TOTAL)', re.MULTILINE)
+        table_pattern = re.compile(
+            r"(\|.+\|\n\|[-| ]+\|\n(?:\|.*\|\n)*?)(?=\|.*TOTAL)", re.MULTILINE
+        )
 
         # Find all tables in the markdown text
         tables = table_pattern.findall(markdown_text)
@@ -59,13 +61,17 @@ class MarkdownProcessor(object):
         html_tables = []
         for table_text in tables:
             # Split the table into lines
-            lines = table_text.strip().split('\n')
+            lines = table_text.strip().split("\n")
 
             # Extract headers and rows
-            headers = [self.clean_column_name(header.strip()) for header in lines[0].split('|') if header]
+            headers = [
+                self.clean_column_name(header.strip())
+                for header in lines[0].split("|")
+                if header
+            ]
             rows = []
             for line in lines[2:]:  # Skip header and separator lines
-                row = [cell.strip() for cell in line.split('|') if cell]
+                row = [cell.strip() for cell in line.split("|") if cell]
                 rows.append(row)
 
             # Convert to Pandas DataFrame
@@ -93,15 +99,15 @@ class MarkdownProcessor(object):
             # Check if it is a single word with spaces between letters
             parts = name.split()
             if len(parts) > 1 and all(len(part) == 1 for part in parts):
-                return ''.join(parts)
+                return "".join(parts)
         return name
 
     def invoke_pipeline_step(self, task_call, task_description, local):
         if local:
             with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[progress.description]{task.description}"),
-                    transient=False,
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                transient=False,
             ) as progress:
                 progress.add_task(description=task_description, total=None)
                 ret = task_call()
@@ -112,15 +118,15 @@ class MarkdownProcessor(object):
         return ret
 
     def table_has_header(self, table_html):
-        soup = BeautifulSoup(table_html, 'html.parser')
-        table = soup.find('table')
+        soup = BeautifulSoup(table_html, "html.parser")
+        table = soup.find("table")
 
         # Check if the table contains a <thead> tag
-        if table.find('thead'):
+        if table.find("thead"):
             return True
 
         # Check if the table contains any <th> tags inside the table (in case there's no <thead>)
-        if table.find_all('th'):
+        if table.find_all("th"):
             return True
 
         return False
@@ -134,4 +140,3 @@ if __name__ == "__main__":
     #     ['tables', 'markdown'],
     #     True,
     #     True)
-

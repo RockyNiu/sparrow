@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from routers import ocr
 
-app = FastAPI(openapi_url="/api/v1/sparrow-ocr/openapi.json", docs_url="/api/v1/sparrow-ocr/docs")
+app = FastAPI(
+    openapi_url="/api/v1/sparrow-ocr/openapi.json", docs_url="/api/v1/sparrow-ocr/docs"
+)
 
 app.add_middleware(
     CORSMiddleware,

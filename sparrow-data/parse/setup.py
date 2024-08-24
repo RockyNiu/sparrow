@@ -26,12 +26,12 @@ setup(
         "Programming Language :: Python :: 3.10",
     ],
     entry_points={
-        'console_scripts': [
-            'sparrow-parse=sparrow_parse:main',
+        "console_scripts": [
+            "sparrow-parse=sparrow_parse:main",
         ],
     },
     keywords="llm, rag, vision",
     packages=find_packages(),
-    python_requires='>=3.10',
+    python_requires=">=3.10",
     install_requires=requirements,
 )

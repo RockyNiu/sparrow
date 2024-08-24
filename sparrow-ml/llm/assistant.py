@@ -7,9 +7,11 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-def run(agent: Annotated[str, typer.Option(help="Ingest agent")] = "fcall",
-        query: Annotated[str, typer.Option(help="The query to run")] = "retrieve",
-        debug: Annotated[bool, typer.Option(help="Enable debug mode")] = False):
+def run(
+    agent: Annotated[str, typer.Option(help="Ingest agent")] = "fcall",
+    query: Annotated[str, typer.Option(help="The query to run")] = "retrieve",
+    debug: Annotated[bool, typer.Option(help="Enable debug mode")] = False,
+):
     user_selected_agent = agent  # Modify this as needed
 
     try:

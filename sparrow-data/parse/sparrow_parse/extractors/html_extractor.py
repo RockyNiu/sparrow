@@ -11,8 +11,18 @@ class HTMLExtractor(object):
     def __init__(self):
         pass
 
-    def read_data(self, target_columns, data, similarity_threshold_junk, similarity_threshold_column_id,
-                  column_keywords=None, group_by_rows=True, update_targets=False, local=True, debug=False):
+    def read_data(
+        self,
+        target_columns,
+        data,
+        similarity_threshold_junk,
+        similarity_threshold_column_id,
+        column_keywords=None,
+        group_by_rows=True,
+        update_targets=False,
+        local=True,
+        debug=False,
+    ):
         answer = {}
 
         json_result, targets_unprocessed = [], []
@@ -21,9 +31,16 @@ class HTMLExtractor(object):
             if not target_columns:
                 break
 
-            json_result, targets_unprocessed = self.read_data_from_table(target_columns, table, similarity_threshold_junk,
-                                                                         similarity_threshold_column_id, column_keywords,
-                                                                         group_by_rows, local, debug)
+            json_result, targets_unprocessed = self.read_data_from_table(
+                target_columns,
+                table,
+                similarity_threshold_junk,
+                similarity_threshold_column_id,
+                column_keywords,
+                group_by_rows,
+                local,
+                debug,
+            )
             answer = self.add_answer_section(answer, "items" + str(i + 1), json_result)
 
             if update_targets:
@@ -33,18 +50,29 @@ class HTMLExtractor(object):
 
         return answer, targets_unprocessed
 
-    def read_data_from_table(self, target_columns, data, similarity_threshold_junk, similarity_threshold_column_id,
-                             column_keywords=None, group_by_rows=True, local=True, debug=False):
+    def read_data_from_table(
+        self,
+        target_columns,
+        data,
+        similarity_threshold_junk,
+        similarity_threshold_column_id,
+        column_keywords=None,
+        group_by_rows=True,
+        local=True,
+        debug=False,
+    ):
         data = self.invoke_pipeline_step(
-            lambda: merge_html_table_headers(data, column_keywords, similarity_threshold_junk, debug),
+            lambda: merge_html_table_headers(
+                data, column_keywords, similarity_threshold_junk, debug
+            ),
             "Merging HTML table headers...",
-            local
+            local,
         )
 
         data = self.invoke_pipeline_step(
             lambda: clean_html_table_header_names(data),
             "Cleaning HTML table headers...",
-            local
+            local,
         )
 
         columns = self.get_table_column_names(data)
@@ -55,9 +83,11 @@ class HTMLExtractor(object):
             print(f"Target columns: {target_columns}")
 
         indices, targets, targets_unprocessed = self.invoke_pipeline_step(
-            lambda: self.calculate_similarity(columns, target_columns, similarity_threshold_column_id, debug),
+            lambda: self.calculate_similarity(
+                columns, target_columns, similarity_threshold_column_id, debug
+            ),
             "Calculating cosine similarity between columns and target values...",
-            local
+            local,
         )
 
         if debug:
@@ -65,17 +95,21 @@ class HTMLExtractor(object):
 
         # Extracting data
         extracted_data = self.invoke_pipeline_step(
-            lambda: self.extract_columns_from_table(data, indices, targets, group_by_rows),
+            lambda: self.extract_columns_from_table(
+                data, indices, targets, group_by_rows
+            ),
             "Extracting data from the table...",
-            local
+            local,
         )
 
         json_result = self.convert_to_json(extracted_data)
 
         return json_result, targets_unprocessed
 
-    def calculate_similarity(self, columns, target_columns, similarity_threshold_column_id, debug):
-        model = SentenceTransformer('all-mpnet-base-v2')
+    def calculate_similarity(
+        self, columns, target_columns, similarity_threshold_column_id, debug
+    ):
+        model = SentenceTransformer("all-mpnet-base-v2")
 
         # Compute embeddings for columns and target values
         column_embeddings = model.encode(columns)
@@ -97,8 +131,13 @@ class HTMLExtractor(object):
             if similarity_score > similarity_threshold_column_id:
                 if most_similar_idx in most_similar_indices:
                     if similarity_score > most_similar_indices[most_similar_idx][1]:
-                        targets_unprocessed.append(most_similar_indices[most_similar_idx][0])
-                        most_similar_indices[most_similar_idx] = (target, similarity_score)
+                        targets_unprocessed.append(
+                            most_similar_indices[most_similar_idx][0]
+                        )
+                        most_similar_indices[most_similar_idx] = (
+                            target,
+                            similarity_score,
+                        )
                     else:
                         targets_unprocessed.append(target)
                 else:
@@ -107,7 +146,8 @@ class HTMLExtractor(object):
                 targets_unprocessed.append(target)
             if debug:
                 print(
-                    f"The most similar column to '{target}' is '{most_similar_column}' with a similarity score of {similarity_score:.4f} and order ID {most_similar_idx}")
+                    f"The most similar column to '{target}' is '{most_similar_column}' with a similarity score of {similarity_score:.4f} and order ID {most_similar_idx}"
+                )
 
         most_similar_indices = dict(sorted(most_similar_indices.items()))
 
@@ -121,14 +161,18 @@ class HTMLExtractor(object):
         if debug:
             print()
             for idx, (target, score) in most_similar_indices.items():
-                print(f"Target: '{target}', Column: '{columns[idx]}', Column ID: {idx}, Score: {score:.4f}")
+                print(
+                    f"Target: '{target}', Column: '{columns[idx]}', Column ID: {idx}, Score: {score:.4f}"
+                )
             print()
 
         return indices, targets, targets_unprocessed
 
-    def extract_columns_from_table(self, html_table, column_ids, target_columns, group_by_rows=False):
-        soup = BeautifulSoup(html_table, 'html.parser')
-        table = soup.find('table')
+    def extract_columns_from_table(
+        self, html_table, column_ids, target_columns, group_by_rows=False
+    ):
+        soup = BeautifulSoup(html_table, "html.parser")
+        table = soup.find("table")
 
         if group_by_rows:
             # Initialize a list to store each row's data as a dictionary
@@ -138,26 +182,30 @@ class HTMLExtractor(object):
             extracted_data = {target_columns[i]: [] for i in range(len(column_ids))}
 
         # Extract row information
-        rows = table.find_all('tr')
+        rows = table.find_all("tr")
 
         for row in rows:
             # Skip the header row
-            if row.find_all('th'):
+            if row.find_all("th"):
                 continue
 
-            cells = row.find_all('td')
+            cells = row.find_all("td")
             if cells:  # Ensure the row contains data cells
                 if group_by_rows:
                     row_data = {}
                     for idx, col_id in enumerate(column_ids):
-                        value = cells[col_id].text.strip() if col_id < len(cells) else ''
-                        value = value.replace('|', '').strip()
+                        value = (
+                            cells[col_id].text.strip() if col_id < len(cells) else ""
+                        )
+                        value = value.replace("|", "").strip()
                         row_data[target_columns[idx]] = value
                     extracted_data.append(row_data)
                 else:
                     for idx, col_id in enumerate(column_ids):
-                        value = cells[col_id].text.strip() if col_id < len(cells) else ''
-                        value = value.replace('|', '').strip()
+                        value = (
+                            cells[col_id].text.strip() if col_id < len(cells) else ""
+                        )
+                        value = value.replace("|", "").strip()
                         extracted_data[target_columns[idx]].append(value)
 
         return extracted_data
@@ -176,22 +224,22 @@ class HTMLExtractor(object):
         list: A list of column names.
         """
         # Parse the HTML content using BeautifulSoup with html.parser
-        soup = BeautifulSoup(html_table, 'html.parser')
+        soup = BeautifulSoup(html_table, "html.parser")
 
         # Find the <thead> tag
-        thead = soup.find('thead')
+        thead = soup.find("thead")
 
         # Extract column names into a list
-        column_names = [th.get_text() for th in thead.find_all('th')]
+        column_names = [th.get_text() for th in thead.find_all("th")]
 
         return column_names
 
     def invoke_pipeline_step(self, task_call, task_description, local):
         if local:
             with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[progress.description]{task.description}"),
-                    transient=False,
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                transient=False,
             ) as progress:
                 progress.add_task(description=task_description, total=None)
                 ret = task_call()
@@ -215,7 +263,7 @@ class HTMLExtractor(object):
     def format_json_output(self, answer):
         formatted_json = json.dumps(answer, indent=4)
         formatted_json = formatted_json.replace('", "', '",\n"')
-        formatted_json = formatted_json.replace('}, {', '},\n{')
+        formatted_json = formatted_json.replace("}, {", "},\n{")
         return formatted_json
 
 

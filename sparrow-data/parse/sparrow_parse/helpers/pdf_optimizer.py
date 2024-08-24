@@ -2,7 +2,6 @@ import pypdf
 from pdf2image import convert_from_path
 import os
 import tempfile
-import shutil
 
 
 class PDFOptimizer(object):
@@ -16,7 +15,7 @@ class PDFOptimizer(object):
 
         if not convert_to_images:
             # Open the PDF file
-            with open(file_path, 'rb') as pdf_file:
+            with open(file_path, "rb") as pdf_file:
                 reader = pypdf.PdfReader(pdf_file)
                 number_of_pages = len(reader.pages)
 
@@ -25,15 +24,17 @@ class PDFOptimizer(object):
                     writer = pypdf.PdfWriter()
                     writer.add_page(reader.pages[page_num])
 
-                    output_filename = os.path.join(temp_dir, f'page_{page_num + 1}.pdf')
-                    with open(output_filename, 'wb') as output_file:
+                    output_filename = os.path.join(temp_dir, f"page_{page_num + 1}.pdf")
+                    with open(output_filename, "wb") as output_file:
                         writer.write(output_file)
                         output_files.append(output_filename)
 
                     if output_dir:
                         # Save each page to the debug folder
-                        debug_output_filename = os.path.join(output_dir, f'page_{page_num + 1}.pdf')
-                        with open(debug_output_filename, 'wb') as output_file:
+                        debug_output_filename = os.path.join(
+                            output_dir, f"page_{page_num + 1}.pdf"
+                        )
+                        with open(debug_output_filename, "wb") as output_file:
                             writer.write(output_file)
 
             # Return the number of pages, the list of file paths, and the temporary directory
@@ -44,14 +45,16 @@ class PDFOptimizer(object):
 
             # Save the images to the temporary directory
             for i, image in enumerate(images):
-                output_filename = os.path.join(temp_dir, f'page_{i + 1}.jpg')
-                image.save(output_filename, 'JPEG')
+                output_filename = os.path.join(temp_dir, f"page_{i + 1}.jpg")
+                image.save(output_filename, "JPEG")
                 output_files.append(output_filename)
 
                 if output_dir:
                     # Save each image to the debug folder
-                    debug_output_filename = os.path.join(output_dir, f'page_{i + 1}.jpg')
-                    image.save(debug_output_filename, 'JPEG')
+                    debug_output_filename = os.path.join(
+                        output_dir, f"page_{i + 1}.jpg"
+                    )
+                    image.save(debug_output_filename, "JPEG")
 
             # Return the number of pages, the list of file paths, and the temporary directory
             return len(images), output_files, temp_dir

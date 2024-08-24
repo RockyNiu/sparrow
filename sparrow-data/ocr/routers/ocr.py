@@ -17,7 +17,7 @@ router = APIRouter()
 
 @lru_cache(maxsize=1)
 def load_ocr_model():
-    model = PaddleOCR(use_angle_cls=True, lang='en')
+    model = PaddleOCR(use_angle_cls=True, lang="en")
     return model
 
 
@@ -65,8 +65,9 @@ def invoke_ocr(doc, content_type):
 
 
 @router.post("/inference")
-async def inference(file: UploadFile = File(None),
-                    image_url: Optional[str] = Form(None)):
+async def inference(
+    file: UploadFile = File(None), image_url: Optional[str] = Form(None)
+):
     result = None
     if file:
         if file.content_type in ["image/jpeg", "image/jpg", "image/png"]:
@@ -76,7 +77,9 @@ async def inference(file: UploadFile = File(None),
             pages = convert_from_bytes(pdf_bytes, 300)
             doc = pages[0]
         else:
-            return {"error": "Invalid file type. Only JPG/PNG images and PDF are allowed."}
+            return {
+                "error": "Invalid file type. Only JPG/PNG images and PDF are allowed."
+            }
 
         result, processing_time = invoke_ocr(doc, file.content_type)
 
@@ -84,7 +87,7 @@ async def inference(file: UploadFile = File(None),
     elif image_url:
         # test image url: https://raw.githubusercontent.com/katanaml/sparrow/main/sparrow-ml/llm/data/inout-20211211_001.jpg
         # test PDF: https://raw.githubusercontent.com/katanaml/sparrow/main/sparrow-ml/llm/data/invoice_1.pdf
-        headers = {"User-Agent": "Mozilla/5.0"} # to avoid 403 error
+        headers = {"User-Agent": "Mozilla/5.0"}  # to avoid 403 error
         req = Request(image_url, headers=headers)
         with urlopen(req) as response:
             content_type = response.info().get_content_type()
@@ -96,7 +99,9 @@ async def inference(file: UploadFile = File(None),
                 pages = convert_from_bytes(pdf_bytes, 300)
                 doc = pages[0]
             else:
-                return {"error": "Invalid file type. Only JPG/PNG images and PDF are allowed."}
+                return {
+                    "error": "Invalid file type. Only JPG/PNG images and PDF are allowed."
+                }
 
         result, processing_time = invoke_ocr(doc, content_type)
 
@@ -105,6 +110,6 @@ async def inference(file: UploadFile = File(None),
         result = {"info": "No input provided"}
 
     if result is None:
-        raise HTTPException(status_code=400, detail=f"Failed to process the input.")
+        raise HTTPException(status_code=400, detail="Failed to process the input.")
 
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)

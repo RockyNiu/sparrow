@@ -13,22 +13,24 @@ class UnstructuredProcessor(object):
     def __init__(self):
         pass
 
-    def extract_data(self, file_path, strategy, model_name, options, local=True, debug=False):
+    def extract_data(
+        self, file_path, strategy, model_name, options, local=True, debug=False
+    ):
         # Extracts the elements from the PDF
         elements = self.invoke_pipeline_step(
             lambda: self.process_file(file_path, strategy, model_name),
             "Extracting elements from the document...",
-            local
+            local,
         )
 
         if debug:
-            new_extension = 'json'  # You can change this to any extension you want
+            new_extension = "json"  # You can change this to any extension you want
             new_file_path = self.change_file_extension(file_path, new_extension)
 
             content, table_content = self.invoke_pipeline_step(
                 lambda: self.load_text_data(elements, new_file_path, options),
                 "Loading text data...",
-                local
+                local,
             )
         else:
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -37,7 +39,7 @@ class UnstructuredProcessor(object):
                 content, table_content = self.invoke_pipeline_step(
                     lambda: self.load_text_data(elements, temp_file_path, options),
                     "Loading text data...",
-                    local
+                    local,
                 )
 
         if debug:
@@ -54,33 +56,33 @@ class UnstructuredProcessor(object):
     def process_file(self, file_path, strategy, model_name):
         elements = None
 
-        if file_path.lower().endswith('.pdf'):
+        if file_path.lower().endswith(".pdf"):
             elements = partition_pdf(
                 filename=file_path,
                 strategy=strategy,
                 infer_table_structure=True,
                 hi_res_model_name=model_name,
-                languages=['en']
+                languages=["en"],
             )
-        elif file_path.lower().endswith(('.jpg', '.jpeg', '.png')):
+        elif file_path.lower().endswith((".jpg", ".jpeg", ".png")):
             elements = partition_image(
                 filename=file_path,
                 strategy=strategy,
                 infer_table_structure=True,
                 hi_res_model_name=model_name,
-                languages=['en']
+                languages=["en"],
             )
 
         return elements
 
     def change_file_extension(self, file_path, new_extension, suffix=None):
         # Check if the new extension starts with a dot and add one if not
-        if not new_extension.startswith('.'):
-            new_extension = '.' + new_extension
+        if not new_extension.startswith("."):
+            new_extension = "." + new_extension
 
         # Split the file path into two parts: the base (everything before the last dot) and the extension
         # If there's no dot in the filename, it'll just return the original filename without an extension
-        base = file_path.rsplit('.', 1)[0]
+        base = file_path.rsplit(".", 1)[0]
 
         # Concatenate the base with the new extension
         if suffix is None:
@@ -107,13 +109,15 @@ class UnstructuredProcessor(object):
 
     def process_json_file(self, file_path, option=None):
         # Read the JSON file
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             data = json.load(file)
 
         # Iterate over the JSON data and extract required elements
         extracted_elements = []
         for entry in data:
-            if entry["type"] == "Table" and (option is None or option == "table" or option == "form"):
+            if entry["type"] == "Table" and (
+                option is None or option == "table" or option == "form"
+            ):
                 table_data = entry["metadata"]["text_as_html"]
                 if option == "table" and self.table_has_header(table_data):
                     extracted_elements.append(table_data)
@@ -121,9 +125,13 @@ class UnstructuredProcessor(object):
                     extracted_elements.append(table_data)
             elif entry["type"] == "Title" and (option is None or option == "form"):
                 extracted_elements.append(entry["text"])
-            elif entry["type"] == "NarrativeText" and (option is None or option == "form"):
+            elif entry["type"] == "NarrativeText" and (
+                option is None or option == "form"
+            ):
                 extracted_elements.append(entry["text"])
-            elif entry["type"] == "UncategorizedText" and (option is None or option == "form"):
+            elif entry["type"] == "UncategorizedText" and (
+                option is None or option == "form"
+            ):
                 extracted_elements.append(entry["text"])
             elif entry["type"] == "ListItem" and (option is None or option == "form"):
                 extracted_elements.append(entry["text"])
@@ -140,9 +148,9 @@ class UnstructuredProcessor(object):
     def invoke_pipeline_step(self, task_call, task_description, local):
         if local:
             with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[progress.description]{task.description}"),
-                    transient=False,
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                transient=False,
             ) as progress:
                 progress.add_task(description=task_description, total=None)
                 ret = task_call()
@@ -153,15 +161,15 @@ class UnstructuredProcessor(object):
         return ret
 
     def table_has_header(self, table_html):
-        soup = BeautifulSoup(table_html, 'html.parser')
-        table = soup.find('table')
+        soup = BeautifulSoup(table_html, "html.parser")
+        table = soup.find("table")
 
         # Check if the table contains a <thead> tag
-        if table.find('thead'):
+        if table.find("thead"):
             return True
 
         # Check if the table contains any <th> tags inside the table (in case there's no <thead>)
-        if table.find_all('th'):
+        if table.find_all("th"):
             return True
 
         return False

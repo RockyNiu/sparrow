@@ -19,24 +19,26 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 
 # Import config vars
-with open('config.yml', 'r', encoding='utf8') as ymlfile:
+with open("config.yml", "r", encoding="utf8") as ymlfile:
     cfg = box.Box(yaml.safe_load(ymlfile))
 
 
 class VLlamaIndexPipeline(Pipeline):
-    def run_pipeline(self,
-                     payload: str,
-                     query_inputs: [str],
-                     query_types: [str],
-                     keywords: [str],
-                     query: str,
-                     file_path: str,
-                     index_name: str,
-                     options: List[str] = None,
-                     group_by_rows: bool = True,
-                     update_targets: bool = True,
-                     debug: bool = False,
-                     local: bool = True) -> Any:
+    def run_pipeline(
+        self,
+        payload: str,
+        query_inputs: list[str],
+        query_types: list[str],
+        keywords: list[str],
+        query: str,
+        file_path: str,
+        index_name: str,
+        options: list[str] | None = None,
+        group_by_rows: bool = True,
+        update_targets: bool = True,
+        debug: bool = False,
+        local: bool = True,
+    ) -> Any:
         print(f"\nRunning pipeline with {payload}\n")
 
         start = timeit.default_timer()
@@ -44,20 +46,26 @@ class VLlamaIndexPipeline(Pipeline):
         if file_path is None:
             raise ValueError("File path is required for vllamaindex pipeline")
 
-        mm_model = self.invoke_pipeline_step(lambda: OllamaMultiModal(model=cfg.LLM_VLLAMAINDEX),
-                                             "Loading Ollama MultiModal...",
-                                             local)
+        mm_model = self.invoke_pipeline_step(
+            lambda: OllamaMultiModal(model=cfg.LLM_VLLAMAINDEX),
+            "Loading Ollama MultiModal...",
+            local,
+        )
 
         # load as image documents
-        image_documents = self.invoke_pipeline_step(lambda: SimpleDirectoryReader(input_files=[file_path],
-                                                                                  required_exts=[".jpg", ".JPG",
-                                                                                                 ".JPEG"]).load_data(),
-                                                    "Loading image documents...",
-                                                    local)
+        image_documents = self.invoke_pipeline_step(
+            lambda: SimpleDirectoryReader(
+                input_files=[file_path], required_exts=[".jpg", ".JPG", ".JPEG"]
+            ).load_data(),
+            "Loading image documents...",
+            local,
+        )
 
-        ResponseModel = self.invoke_pipeline_step(lambda: self.build_response_class(query_inputs, query_types),
-                                                  "Building dynamic response class...",
-                                                  local)
+        ResponseModel = self.invoke_pipeline_step(
+            lambda: self.build_response_class(query_inputs, query_types),
+            "Building dynamic response class...",
+            local,
+        )
 
         prompt_template_str = """\
         {query_str}
@@ -74,25 +82,24 @@ class VLlamaIndexPipeline(Pipeline):
         )
 
         try:
-            response = self.invoke_pipeline_step(lambda: mm_program(query_str=query),
-                                                 "Running inference...",
-                                                 local)
+            response = self.invoke_pipeline_step(
+                lambda: mm_program(query_str=query), "Running inference...", local
+            )
         except ValueError as e:
             print(f"Error: {e}")
-            msg = 'Inference failed'
+            msg = "Inference failed"
             return '{"answer": "' + msg + '"}'
 
         end = timeit.default_timer()
 
-        print(f"\nJSON response:\n")
+        print("\nJSON response:\n")
         for res in response:
             print(res)
-        print('=' * 50)
+        print("=" * 50)
 
         print(f"Time to retrieve answer: {end - start}")
 
         return response
-
 
     # Function to safely evaluate type strings
     def safe_eval_type(self, type_str, context):
@@ -104,29 +111,32 @@ class VLlamaIndexPipeline(Pipeline):
     def build_response_class(self, query_inputs, query_types_as_strings):
         # Controlled context for eval
         context = {
-            'List': List,
-            'str': str,
-            'int': int,
-            'float': float
+            "List": List,
+            "str": str,
+            "int": int,
+            "float": float,
             # Include other necessary types or typing constructs here
         }
 
         # Convert string representations to actual types
-        query_types = [self.safe_eval_type(type_str, context) for type_str in query_types_as_strings]
+        query_types = [
+            self.safe_eval_type(type_str, context)
+            for type_str in query_types_as_strings
+        ]
 
         # Create fields dictionary
         fields = {name: (type_, ...) for name, type_ in zip(query_inputs, query_types)}
 
-        DynamicModel = create_model('DynamicModel', **fields)
+        DynamicModel = create_model("DynamicModel", **fields)
 
         return DynamicModel
 
     def invoke_pipeline_step(self, task_call, task_description, local):
         if local:
             with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[progress.description]{task.description}"),
-                    transient=False,
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                transient=False,
             ) as progress:
                 progress.add_task(description=task_description, total=None)
                 ret = task_call()
@@ -135,5 +145,3 @@ class VLlamaIndexPipeline(Pipeline):
             ret = task_call()
 
         return ret
-
-
