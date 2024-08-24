@@ -177,8 +177,8 @@ class LlamaIndexPipeline(Pipeline):
         start = timeit.default_timer()
 
         step = 0
-        answer = False
-        while not answer:
+        answer = None
+        while answer is None:
             step += 1
             if step > 1:
                 print("Refining answer...")
@@ -211,16 +211,18 @@ class LlamaIndexPipeline(Pipeline):
 
         return answer
 
-    def get_rag_response(self, query, chain: BaseQueryEngine, debug=False) -> str:
+    def get_rag_response(self, query, chain: BaseQueryEngine, debug=False) -> str | None:
         try:
             result = chain.query(query)
         except ValueError as error:
-            if text := error.args[0]:
-                starting_str = "Could not extract json string from output: \n"
-                json_str = text[text.find(starting_str) + len(starting_str) :]
+            text = error.args[0]
+            starting_str = "Could not extract json string from output: \n"
+            if (index := text.find(starting_str)) != -1:
+                json_str = text[index + len(starting_str) :]
                 result = json_str + "}"
             else:
-                raise error
+                return
+
 
         try:
             # Convert and pretty print
@@ -233,7 +235,7 @@ class LlamaIndexPipeline(Pipeline):
             {result}
             """
             print(msg)
-            raise ValueError(msg)  # TODO: update the exception handling
+            # raise ValueError(msg)  # TODO: update the exception handling
 
         # return False
 
