@@ -10,4 +10,4 @@ The orignial License is GPL 3.0. This is a fork of the original project, which i
 - formating with ruff
   - install `pip install -r requirements-dev.txt`
   - `make format` or `ruff format`
-- correcting type hints
+- correcting typing hints
